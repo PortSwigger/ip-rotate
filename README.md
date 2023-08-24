@@ -13,8 +13,9 @@ This is useful to bypass different kinds of IP blocking like bruteforce protecti
 ## Usage
 
 1. Setup [Jython](https://www.jython.org/download.html) in Burp Suite.
-2. Install the [boto3](https://github.com/boto/boto3) module for Python 2.
-   1. Make sure that you setup your [python environment in burp](https://portswigger.net/burp/documentation/desktop/tools/extender#python-environment) to load the [boto3](https://github.com/boto/boto3) module properly or it won't find it.
+2. Install the [boto3](https://github.com/boto/boto3) module for jython.
+   java -jar jython-standalone-2.7.3.jar -m ensurepip
+   java -jar jython-standalone-2.7.3.jar -m pip install boto3
 3. Ensure you have a set of AWS keys that have full access to the API Gateway service. This is available through the free tier of AWS.
 4. Insert the credentials into the fields.
 5. Insert the target domain you wish to target.
