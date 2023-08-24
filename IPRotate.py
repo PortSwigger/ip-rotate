@@ -26,7 +26,7 @@ class BurpExtender(IBurpExtender, IExtensionStateListener, ITab, IHttpListener):
 		self.aws_access_key_id = ''
 		self.aws_secret_accesskey = ''
 		self.enabled_regions = {}
-		self.debug = False
+		self.debug = True
 
 
 	def registerExtenderCallbacks(self, callbacks):
@@ -370,7 +370,7 @@ class BurpExtender(IBurpExtender, IExtensionStateListener, ITab, IHttpListener):
 		for region in AVAIL_REGIONS:
 			cur_region = region.replace('-','_')
 			cur_region = cur_region+'_status'
-			setattr(self,cur_region,JCheckBox(region,True))
+			setattr(self,cur_region,JCheckBox(region,False))
 			attr = getattr(self,cur_region)
 			self.regions_panel.add(attr)
 
