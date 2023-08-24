@@ -25,7 +25,9 @@ class BurpExtender(IBurpExtender, IExtensionStateListener, ITab, IHttpListener):
 		self.currentEndpoint = 0
 		self.aws_access_key_id = ''
 		self.aws_secret_accesskey = ''
-		self.aws_session_token = ''
+		self.aws_mfa_serial = ''
+		self.authenticator_mfa_code = ''
+		self.aws_role_arn = ''
 		self.enabled_regions = {}
 		self.debug = False
 
@@ -67,18 +69,26 @@ class BurpExtender(IBurpExtender, IExtensionStateListener, ITab, IHttpListener):
 
 	#Uses boto3 to spin up an API Gateway
 	def startAPIGateway(self):
+		sess = boto3.Session(
+			aws_access_key_id=self.access_key.text,
+			aws_secret_access_key=self.secret_key.text)
+		print 'Session started'
+		sts = sess.client('sts')
+		role = sts.assume_role(
+			RoleArn=self.aws_role_arn_tbox.text,
+			RoleSessionName='assumedRoleSession',
+			SerialNumber=self.aws_mfa_serial_tbox.text, 
+			TokenCode=self.authenticator_mfa_code_tbox.text)
+		print 'Role switched'
+		roleSess = boto3.Session(
+			aws_access_key_id=role['Credentials']['AccessKeyId'],
+			aws_secret_access_key=role['Credentials']['SecretAccessKey'],
+			aws_session_token=role['Credentials']['SessionToken'])
+		print 'New role session started'
+
 		self.getRegions()
 		for region in self.enabled_regions.keys():
-			print self.access_key.text
-			print self.secret_key.text
-			print self.session_token.text
-			self.awsclient = boto3.client('apigateway',
-				aws_access_key_id=self.access_key.text,
-				aws_secret_access_key=self.secret_key.text,
-				aws_session_token=self.session_token.text,
-				region_name=region
-			)
-
+			self.awsclient = roleSess.client('apigateway',region_name=region)
 			self.create_api_response = self.awsclient.create_rest_api(
 				name=API_NAME,
 				endpointConfiguration={
@@ -184,7 +194,6 @@ class BurpExtender(IBurpExtender, IExtensionStateListener, ITab, IHttpListener):
 				self.awsclient = boto3.client('apigateway',
 					aws_access_key_id=self.access_key.text,
 					aws_secret_access_key=self.secret_key.text,
-					aws_session_token=self.aws_session_token,
 					region_name=region
 				)
 
@@ -200,10 +209,11 @@ class BurpExtender(IBurpExtender, IExtensionStateListener, ITab, IHttpListener):
 	def saveKeys(self, event):
 		aws_access_key_id=self.access_key.text
 		aws_secret_access_key=self.secret_key.text
-		aws_session_token=self.session_token.text
 		self.callbacks.saveExtensionSetting("aws_access_key_id", aws_access_key_id)
 		self.callbacks.saveExtensionSetting("aws_secret_access_key", aws_secret_access_key)
-		self.callbacks.saveExtensionSetting("aws_session_token", aws_session_token)
+		self.callbacks.saveExtensionSetting("aws_mfa_serial", self.aws_mfa_serial_tbox.text)
+		self.callbacks.saveExtensionSetting("authenticator_mfa_code", self.authenticator_mfa_code_tbox.text)
+		self.callbacks.saveExtensionSetting("aws_role_arn", self.aws_role_arn_tbox.text)
 		return
 
 	#Called on "Enable" button click to spin up the API Gateway
@@ -313,13 +323,20 @@ class BurpExtender(IBurpExtender, IExtensionStateListener, ITab, IHttpListener):
 	def getUiComponent(self):
 		aws_access_key_id = self.callbacks.loadExtensionSetting("aws_access_key_id")
 		aws_secret_accesskey = self.callbacks.loadExtensionSetting("aws_secret_access_key")
-		aws_session_token = self.callbacks.loadExtensionSetting("aws_session_token")
+		aws_mfa_serial = self.callbacks.loadExtensionSetting("aws_mfa_serial")
+		authenticator_mfa_code = self.callbacks.loadExtensionSetting("authenticator_mfa_code")
+		aws_role_arn = self.callbacks.loadExtensionSetting("aws_role_arn")
+
 		if aws_access_key_id:
 			self.aws_access_key_id = aws_access_key_id
 		if aws_secret_accesskey:
 			self.aws_secret_accesskey = aws_secret_accesskey
-		if aws_session_token:
-			self.aws_session_token = aws_session_token
+		if aws_mfa_serial:
+			self.aws_mfa_serial = aws_mfa_serial
+		if authenticator_mfa_code:
+			self.authenticator_mfa_code = authenticator_mfa_code
+		if aws_role_arn:
+			self.aws_role_arn = aws_role_arn
 
 		self.panel = JPanel()
 
@@ -339,14 +356,28 @@ class BurpExtender(IBurpExtender, IExtensionStateListener, ITab, IHttpListener):
 		self.secret_key_panel.add(JLabel('Secret Key: '))
 		self.secret_key = JPasswordField(self.aws_secret_accesskey,25)
 		self.secret_key_panel.add(self.secret_key)
+#---------------------------------------------------------------- MFA & Role section
+		self.mfa_serial_panel = JPanel()
+		self.main.add(self.mfa_serial_panel)
+		self.mfa_serial_panel.setLayout(BoxLayout(self.mfa_serial_panel, BoxLayout.X_AXIS))
+		self.mfa_serial_panel.add(JLabel('MFA Serial: '))
+		self.aws_mfa_serial_tbox = JTextField(self.aws_mfa_serial,25)
+		self.mfa_serial_panel.add(self.aws_mfa_serial_tbox)
 
-		self.session_token_panel = JPanel()
-		self.main.add(self.session_token_panel)
-		self.session_token_panel.setLayout(BoxLayout(self.session_token_panel, BoxLayout.X_AXIS))
-		self.session_token_panel.add(JLabel('Session Token: '))
-		self.session_token = JPasswordField(self.aws_session_token,25)
-		self.session_token_panel.add(self.session_token)
+		self.authenticator_mfa_code_panel = JPanel()
+		self.main.add(self.authenticator_mfa_code_panel)
+		self.authenticator_mfa_code_panel.setLayout(BoxLayout(self.authenticator_mfa_code_panel, BoxLayout.X_AXIS))
+		self.authenticator_mfa_code_panel.add(JLabel('MFA Code: '))
+		self.authenticator_mfa_code_tbox = JTextField(self.authenticator_mfa_code,25)
+		self.authenticator_mfa_code_panel.add(self.authenticator_mfa_code_tbox)
 
+		self.aws_role_arn_panel = JPanel()
+		self.main.add(self.aws_role_arn_panel)
+		self.aws_role_arn_panel.setLayout(BoxLayout(self.aws_role_arn_panel, BoxLayout.X_AXIS))
+		self.aws_role_arn_panel.add(JLabel('Role ARN: '))
+		self.aws_role_arn_tbox = JTextField(self.aws_role_arn,25)
+		self.aws_role_arn_panel.add(self.aws_role_arn_tbox)
+#--------------------------------------------------------------------------------------
 		self.target_host_panel = JPanel()
 		self.main.add(self.target_host_panel)
 		self.target_host_panel.setLayout(BoxLayout(self.target_host_panel, BoxLayout.X_AXIS))
