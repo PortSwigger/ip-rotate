@@ -3,7 +3,7 @@ ExtensionType: 2
 Name: IP Rotate
 RepoName: ip-rotate
 ScreenVersion: 2.0a
-SerialVersion: 4
+SerialVersion: 5
 MinPlatformVersion: 2
 ProOnly: False
 Author: David Yesland
