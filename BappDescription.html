@@ -1,8 +1,36 @@
-<p>
-This extension allows you to easily spin up API Gateways across multiple regions. All the Burp Suite traffic for the targeted host is then routed through the API Gateway endpoints which causes the IP to be different on each request. (There is a chance for recycling of IPs but this is pretty low and the more regions you use the less of a chance).</p>
-
-<p>
-This is useful to bypass different kinds of IP blocking like bruteforce protection that blocks based on IP, API rate limiting based on IP or WAF blocking based on IP etc.
+<p><strong>Note:</strong> Where applicable, usage of this extension should comply with Amazon's <a
+        href="https://aws.amazon.com/security/penetration-testing">Customer Service Policy for Penetration Testing</a>.
 </p>
 
-<p>For more information see <a href='https://rhinosecuritylabs.com/aws/bypassing-ip-based-blocking-aws/'>Bypassing IP Based Blocking Using AWS</a></p>
+<p>This extension automatically rotates IP addresses by routing traffic through AWS API Gateway endpoints across
+    multiple regions. Each request is sent through a different regional gateway, effectively changing the source IP
+    address to bypass IP-based blocking mechanisms.</p>
+
+<h2>Features</h2>
+<ul>
+    <li>Spin up API Gateways across 10 AWS regions for maximum IP diversity</li>
+    <li>Automatic rotation through endpoints on each request</li>
+    <li>Support for both HTTP and HTTPS protocols</li>
+    <li>Real-time status monitoring with enable/disable toggle</li>
+    <li>Configurable target domain specification</li>
+    <li>Automatic resource cleanup when disabled</li>
+    <li>Built-in AWS credentials management</li>
+</ul>
+
+<h2>Usage</h2>
+<ol>
+    <li>Configure AWS credentials with API Gateway permissions in the extension interface</li>
+    <li>Specify the target domain you wish to route traffic through</li>
+    <li>Select the protocol (HTTP or HTTPS) based on your target</li>
+    <li>Choose which AWS regions to utilize for the IP pool</li>
+    <li>Click <code class="InlineCode">Enable</code> to create API Gateway endpoints</li>
+    <li>Send requests normally &rarr; traffic will automatically rotate through different IP addresses</li>
+    <li>Click <code class="InlineCode">Disable</code> when finished to clean up AWS resources</li>
+</ol>
+
+<p>The extension is particularly useful for bypassing rate limiting, brute force protection, and WAF rules that
+    implement IP-based blocking. All requests to the configured target domain are automatically intercepted and routed
+    through the rotating gateway endpoints.</p>
+
+<p>For more information see <a href='https://rhinosecuritylabs.com/aws/bypassing-ip-based-blocking-aws/'>Bypassing IP
+        Based Blocking Using AWS</a></p>
